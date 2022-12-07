@@ -4,20 +4,15 @@ import java.io.*;
 import java.net.Socket;
 
 public class Client {
+    private static final int PORT = 8989;
+    private static final String HOST = "127.0.0.1";
+
     public static void main(String[] args) throws IOException {
-        String host = "localhost";
-        int port = 8989;
-        try (
-                Socket clientSocket = new Socket(host, port);
-                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                PrintWriter outFile = new PrintWriter("reply.json");
-                BufferedReader inFile = new BufferedReader(new FileReader("request.json"))
-        ) {
-
-            out.println(inFile.readLine());
-
-            outFile.println(in.readLine());
+        try (Socket clientSocket = new Socket(HOST, PORT)) {
+            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            out.println("{ \"type\": \"REMOVE\", \"task\": \"fitness\" }");
+            System.out.println(in.readLine());
         }
     }
 }

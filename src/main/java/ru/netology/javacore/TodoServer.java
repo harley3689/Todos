@@ -1,8 +1,6 @@
 package ru.netology.javacore;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.sun.net.httpserver.Request;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,63 +9,56 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Deque;
-import java.util.LinkedList;
 
 public class TodoServer {
-    protected Todos todos;
-    protected Deque<Request> deque;
-    protected int port;
+    int port;
+    Todos todos;
+    private Deque<Request> dequeRequest;
 
-    public TodoServer(Todos todos, int port) {
+    public TodoServer(int port, Todos todos) {
         this.todos = todos;
         this.port = port;
-        deque = new LinkedList<>();
     }
 
     public void start() throws IOException {
-
-        Gson gson = new GsonBuilder().create();
-
-        System.out.println("Server started to port: " + port);
-
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
-            while (true) {
+        System.out.println("Starting server at " + port + "...");
+        try (ServerSocket serverSocket = new ServerSocket(8989);) { // стартуем сервер один(!) раз
+            while (true) { // в цикле(!) принимаем подключения
                 try (
                         Socket socket = serverSocket.accept();
                         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                         PrintWriter out = new PrintWriter(socket.getOutputStream());
                 ) {
+                    Gson gson = new Gson();
                     Request request = gson.fromJson(in.readLine(), Request.class);
-                    requestProcessing(request);
+
+                    switch (request.getType()) {
+                        case "ADD":
+                            todos.addTask(request.getTask());
+                            break;
+                        case "REMOVE":
+                            todos.removeTask(request.getTask());
+                            break;
+                        case "RESTORE":
+                            if (!dequeRequest.isEmpty()) {
+                                Request actualRequest = dequeRequest.pollLast();
+                                if (actualRequest.getType().equals("ADD")) {
+                                    todos.removeTask(actualRequest.getTask());
+                                }
+                                if (actualRequest.getType().equals("REMOVE")) {
+                                    todos.addTask(actualRequest.getTask());
+                                }
+                            }
+                            break;
+                    }
                     out.println(todos.getAllTasks());
+
                 }
             }
-        } catch (IOException e) {
-            System.out.println("Don't start!");
-            e.printStackTrace();
-        }
-    }
 
-    private void requestProcessing(Request request) {
-        switch (request.getType()) {
-            case "ADD":
-                deque.offerLast(request);
-                todos.addTask(request);
-                break;
-            case "REMOVE":
-                deque.offerLast(request);
-                todos.removeTask(request.getTask());
-                break;
-            case "RESTORE":
-                if (!deque.isEmpty()) {
-                    Request lastRequest = deque.pollLast();
-                    if (lastRequest.getType().equals("ADD")) {
-                        todos.removeTask(lastRequest.getTask());
-                    } else {
-                        todos.addTask(lastRequest.getTask());
-                    }
-                }
-                break;
+        } catch (IOException e) {
+            System.out.println("Не могу стартовать сервер");
+            e.printStackTrace();
         }
     }
 }
