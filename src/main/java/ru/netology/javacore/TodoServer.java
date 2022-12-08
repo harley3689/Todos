@@ -8,57 +8,49 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Deque;
 
 public class TodoServer {
-    int port;
-    Todos todos;
-    private Deque<Request> dequeRequest;
+    private int port = 8989;
+    private final Todos todos;
+    String task;
 
     public TodoServer(int port, Todos todos) {
-        this.todos = todos;
         this.port = port;
+        this.todos = todos;
+    }
+
+    public TodoServer(int port, Todos todos, String task) {
+        this.port = port;
+        this.todos = todos;
+        this.task = task;
     }
 
     public void start() throws IOException {
         System.out.println("Starting server at " + port + "...");
-        try (ServerSocket serverSocket = new ServerSocket(8989);) { // стартуем сервер один(!) раз
-            while (true) { // в цикле(!) принимаем подключения
-                try (
-                        Socket socket = serverSocket.accept();
-                        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                        PrintWriter out = new PrintWriter(socket.getOutputStream());
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            while (true) {
+                try (Socket clientSocket = serverSocket.accept();
+                     BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream());
                 ) {
-                    Gson gson = new Gson();
-                    Request request = gson.fromJson(in.readLine(), Request.class);
+                    System.out.printf("New connection is connected on the port %d%n", clientSocket.getPort());
+                    String json = in.readLine();
 
-                    switch (request.getType()) {
-                        case "ADD":
-                            todos.addTask(request.getTask());
+                    Gson gson = new Gson();
+                    TaskManager taskManager = gson.fromJson(json, TaskManager.class);
+
+                    switch (taskManager.type) {
+                        case ADD:
+                            todos.addTask(taskManager.task);
                             break;
-                        case "REMOVE":
-                            todos.removeTask(request.getTask());
-                            break;
-                        case "RESTORE":
-                            if (!dequeRequest.isEmpty()) {
-                                Request actualRequest = dequeRequest.pollLast();
-                                if (actualRequest.getType().equals("ADD")) {
-                                    todos.removeTask(actualRequest.getTask());
-                                }
-                                if (actualRequest.getType().equals("REMOVE")) {
-                                    todos.addTask(actualRequest.getTask());
-                                }
-                            }
+                        case REMOVE:
+                            todos.removeTask(taskManager.task);
                             break;
                     }
                     out.println(todos.getAllTasks());
-
+                    System.out.println(taskManager);
                 }
             }
-
-        } catch (IOException e) {
-            System.out.println("Не могу стартовать сервер");
-            e.printStackTrace();
         }
     }
 }

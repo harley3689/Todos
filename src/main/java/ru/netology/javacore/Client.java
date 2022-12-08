@@ -1,18 +1,28 @@
 package ru.netology.javacore;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Scanner;
 
 public class Client {
-    private static final int PORT = 8989;
-    private static final String HOST = "127.0.0.1";
-
     public static void main(String[] args) throws IOException {
-        try (Socket clientSocket = new Socket(HOST, PORT)) {
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            out.println("{ \"type\": \"REMOVE\", \"task\": \"fitness\" }");
-            System.out.println(in.readLine());
+        String host = "localhost";
+        int port = 8989;
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter TODO: ");
+        String input = scanner.nextLine();
+        try (
+                Socket socket = new Socket(host, port);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+        ) {
+            out.println("{ \"type\": \"ADD\", \"task\": \"" + input + "\" }");
+            String response = in.readLine();
+            System.out.println(response);
         }
     }
 }

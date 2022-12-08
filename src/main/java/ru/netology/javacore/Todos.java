@@ -1,26 +1,48 @@
 package ru.netology.javacore;
 
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.stream.Collectors;
+import java.util.Collections;
 
 public class Todos {
-    private ArrayList<String> taskList = new ArrayList<>();
-    private static final int SIZE = 7;
+    private static final int MAX_TASKS = 7;
+    private final ArrayList<String> allTasks;
+
+    public Todos() {
+        this.allTasks = new ArrayList<>();
+    }
 
     public void addTask(String task) {
-        if (taskList.size() < SIZE) {
-            taskList.add(task);
+        if (isMaxNumberOfTasks()) {
+            this.allTasks.add(task);
+        } else {
+            System.out.println("You already have a lot of tasks");
         }
+
     }
 
     public void removeTask(String task) {
-        taskList.remove(task);
+        this.allTasks.remove(task);
+    }
+
+    private boolean isMaxNumberOfTasks() {
+        return allTasks.size() < MAX_TASKS;
     }
 
     public String getAllTasks() {
-        return taskList.stream()
-                .sorted(Comparator.naturalOrder())
-                .collect(Collectors.joining(" "));
+        StringBuilder stringBuilder = new StringBuilder();
+        Collections.sort(this.allTasks);
+        for (String task : this.allTasks
+        ) {
+            stringBuilder.append(task);
+            stringBuilder.append(" ");
+        }
+        return stringBuilder.toString();
+    }
+
+    @Override
+    public String toString() {
+        return "Todos{" +
+                "allTasks=" + allTasks +
+                '}';
     }
 }
